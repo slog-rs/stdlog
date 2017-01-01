@@ -1,60 +1,44 @@
-//! Standard Rust log crate adapter to slog-rs
+//! Standard Rust log crate adapter to slog-rs based on slog-scope.
 //!
-//! This crate allows using `slog` features with code
-//! using legacy `log` statements.
+//! Note: this is a fork of a `slog-stdlog` that unlike original does
+//! share logging scopes with `slog-scope` crate. It is currently advised
+//! to prefer `slog-scope-stdlog`.
 //!
-//! `log` crate expects a global logger to be registered
-//! (popular one is `env_logger`) as a handler for all
-//! `info!(...)` and similar.
+//! This crate provides two way compatibility with legacy `log` crate logging.
 //!
-//! `slog-stdlog` will register itself as `log` global handler and forward all
-//! legacy logging statements to `slog`'s `Logger`. That means existing logging
-//! `debug!` (even in dependencies crates) work and utilize `slog` composable
-//! drains.
+//! ### `log` -> `slog`
 //!
-//! See `init()` documentation for minimal working example.
+//! After calling `init` legacy `log` crate logging statements (eg. `debug!(...)`) will
+//! be redirected just like they originated from the logger returned by `slog_scope::logger()`.
+//! See documentation of `slog-scope` for examples of logging scope usage.
 //!
-//! Note: Whilte `slog-scope` provides a similiar functionality, the `slog-scope` and `slog-stdlog`
-//! keep track of distinct logginc scopes.
+//! ### `slog` -> `log`
+//!
+//! `StdLog` is a `slog::Drain` implementation that will log logging `Record`s just like
+//! they were created using legacy `log` statements.
+//!
+//! ### Warning
+//!
+//! Be careful when using both methods at the same time, as a loop can be easily created:
+//! `log` -> `slog` -> `log` -> ...
+//!
 #![warn(missing_docs)]
 
 #[macro_use]
 extern crate slog;
 extern crate slog_term;
+extern crate slog_scope;
 extern crate log;
-#[macro_use]
-extern crate lazy_static;
-extern crate crossbeam;
 
-use slog::{DrainExt, ser};
+use slog::ser;
 
 use log::LogMetadata;
-use std::sync::Arc;
-use std::cell::RefCell;
 use std::{io, fmt};
 use std::io::Write;
 
 use slog::Level;
-use crossbeam::sync::ArcCell;
-
-thread_local! {
-    static TL_SCOPES: RefCell<Vec<slog::Logger>> = RefCell::new(Vec::with_capacity(8))
-}
-
-lazy_static! {
-    static ref GLOBAL_LOGGER : ArcCell<slog::Logger> = ArcCell::new(
-        Arc::new(
-            slog::Logger::root(slog::Discard, o!())
-        )
-    );
-}
-
-fn set_global_logger(l: slog::Logger) {
-    let _ = GLOBAL_LOGGER.set(Arc::new(l));
-}
 
 struct Logger;
-
 
 fn log_to_slog_level(level: log::LogLevel) -> Level {
     match level {
@@ -79,62 +63,18 @@ impl log::Log for Logger {
         let module = r.location().__module_path;
         let file = r.location().__file;
         let line = r.location().line();
-        with_current_logger(|l| {
-            let s = slog::RecordStatic {
-                level: level,
-                file: file,
-                line: line,
-                column: 0,
-                function: "",
-                module: module,
-                target: target,
-            };
-            l.log(&slog::Record::new(&s, *args, &[]))
-        })
+
+        let s = slog::RecordStatic {
+            level: level,
+            file: file,
+            line: line,
+            column: 0,
+            function: "",
+            module: module,
+            target: target,
+        };
+        slog_scope::logger().log(&slog::Record::new(&s, *args, &[]))
     }
-}
-
-/// Set a `slog::Logger` as a global `log` create handler
-///
-/// This will forward all `log` records to `slog` logger.
-///
-/// ```
-/// // only use `o` macro from `slog` crate
-/// #[macro_use(o)]
-/// extern crate slog;
-/// #[macro_use]
-/// extern crate log;
-/// extern crate slog_stdlog;
-///
-/// fn main() {
-///     let root = slog::Logger::root(
-///         slog::Discard,
-///         o!("build-id" => "8dfljdf"),
-///     );
-///     slog_stdlog::set_logger(root).unwrap();
-///     // Note: this `info!(...)` macro comes from `log` crate
-///     info!("standard logging redirected to slog");
-/// }
-/// ```
-pub fn set_logger(logger: slog::Logger) -> Result<(), log::SetLoggerError> {
-    log::set_logger(|max_log_level| {
-        max_log_level.set(log::LogLevelFilter::max());
-        set_global_logger(logger);
-        Box::new(Logger)
-    })
-}
-
-/// Set a `slog::Logger` as a global `log` create handler
-///
-/// This will forward `log` records that satisfy `log_level_filter` to `slog` logger.
-pub fn set_logger_level(logger: slog::Logger,
-                        log_level_filter: log::LogLevelFilter)
-                        -> Result<(), log::SetLoggerError> {
-    log::set_logger(|max_log_level| {
-        max_log_level.set(log_level_filter);
-        set_global_logger(logger);
-        Box::new(Logger)
-    })
 }
 
 /// Minimal initialization with default drain
@@ -155,85 +95,10 @@ pub fn set_logger_level(logger: slog::Logger,
 /// }
 /// ```
 pub fn init() -> Result<(), log::SetLoggerError> {
-    let drain = slog::level_filter(Level::Info, slog_term::streamer().compact().build());
-    set_logger(slog::Logger::root(drain.fuse(), o!()))
-}
-
-struct ScopeGuard;
-
-
-impl ScopeGuard {
-    fn new(logger: slog::Logger) -> Self {
-        TL_SCOPES.with(|s| {
-            s.borrow_mut().push(logger);
-        });
-
-        ScopeGuard
-    }
-}
-
-impl Drop for ScopeGuard {
-    fn drop(&mut self) {
-        TL_SCOPES.with(|s| {
-            s.borrow_mut().pop().expect("TL_SCOPES should contain a logger");
-        })
-    }
-}
-
-
-/// Access the currently active logger
-///
-/// The reference logger will be either:
-/// * global logger, or
-/// * currently active scope logger
-///
-/// **Warning**: Calling `scope` inside `f`
-/// will result in a panic.
-pub fn with_current_logger<F, R>(f: F) -> R
-    where F: FnOnce(&slog::Logger) -> R
-{
-    TL_SCOPES.with(|s| {
-        let s = s.borrow();
-        if s.is_empty() {
-            f(&GLOBAL_LOGGER.get())
-        } else {
-            f(&s[s.len() - 1])
-        }
+    log::set_logger(|max_log_level| {
+        max_log_level.set(log::LogLevelFilter::max());
+        Box::new(Logger)
     })
-}
-
-/// Access the `Logger` for the current logging scope
-pub fn logger() -> slog::Logger {
-    TL_SCOPES.with(|s| {
-        let s = s.borrow();
-        if s.is_empty() {
-            (*GLOBAL_LOGGER.get()).clone()
-        } else {
-            s[s.len() - 1].clone()
-        }
-    })
-}
-
-/// Execute code in a logging scope
-///
-/// Logging scopes allow using different logger for legacy logging
-/// statements in part of the code.
-///
-/// Logging scopes can be nested and are panic safe.
-///
-/// `logger` is the `Logger` to use during the duration of `f`.
-/// `with_current_logger` can be used to build it as a child of currently active
-/// logger.
-///
-/// `f` is a code to be executed in the logging scope.
-///
-/// Note: Thread scopes are thread-local. Each newly spawned thread starts
-/// with a global logger, as a current logger.
-pub fn scope<SF, R>(logger: slog::Logger, f: SF) -> R
-    where SF: FnOnce() -> R
-{
-    let _guard = ScopeGuard::new(logger);
-    f()
 }
 
 /// Drain logging `Record`s into `log` crate
