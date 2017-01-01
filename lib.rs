@@ -86,10 +86,10 @@ impl log::Log for Logger {
 /// ```
 /// #[macro_use]
 /// extern crate log;
-/// extern crate slog_stdlog;
+/// extern crate slog_scope_stdlog;
 ///
 /// fn main() {
-///     slog_stdlog::init().unwrap();
+///     slog_scope_stdlog::init().unwrap();
 ///     // Note: this `info!(...)` macro comes from `log` crate
 ///     info!("standard logging redirected to slog");
 /// }
