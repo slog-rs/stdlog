@@ -114,12 +114,11 @@ pub struct StdLog;
 
 struct LazyLogString<'a> {
     info: &'a slog::Record<'a>,
-    logger_values : &'a slog::OwnedKeyValueList
+    logger_values: &'a slog::OwnedKeyValueList,
 }
 
 impl<'a> LazyLogString<'a> {
-
-    fn new(info : &'a slog::Record, logger_values : &'a slog::OwnedKeyValueList) -> Self {
+    fn new(info: &'a slog::Record, logger_values: &'a slog::OwnedKeyValueList) -> Self {
 
         LazyLogString {
             info: info,
@@ -137,20 +136,21 @@ impl<'a> fmt::Display for LazyLogString<'a> {
         let mut ser = KSV::new(io, ": ".into());
 
         let res = {
-            || -> io::Result<()> {
+                || -> io::Result<()> {
 
-            for (k, v) in self.logger_values.iter() {
-                try!(ser.io().write_all(", ".as_bytes()));
-                try!(v.serialize(self.info, k, &mut ser));
-            }
+                    for (k, v) in self.logger_values.iter() {
+                        try!(ser.io().write_all(", ".as_bytes()));
+                        try!(v.serialize(self.info, k, &mut ser));
+                    }
 
-            for &(k, v) in self.info.values().iter() {
-                try!(ser.io().write_all(", ".as_bytes()));
-                try!(v.serialize(self.info, k, &mut ser));
-            }
-            Ok(())
-        }
-        }().map_err(|_| fmt::Error);
+                    for &(k, v) in self.info.values().iter() {
+                        try!(ser.io().write_all(", ".as_bytes()));
+                        try!(v.serialize(self.info, k, &mut ser));
+                    }
+                    Ok(())
+                }
+            }()
+            .map_err(|_| fmt::Error);
 
         try!(res);
 
@@ -164,7 +164,7 @@ impl<'a> fmt::Display for LazyLogString<'a> {
 
 impl slog::Drain for StdLog {
     type Error = io::Error;
-    fn log(&self, info: &slog::Record, logger_values : &slog::OwnedKeyValueList) -> io::Result<()> {
+    fn log(&self, info: &slog::Record, logger_values: &slog::OwnedKeyValueList) -> io::Result<()> {
 
         let level = match info.level() {
             slog::Level::Critical | slog::Level::Error => log::LogLevel::Error,
