@@ -139,12 +139,12 @@ impl<'a> fmt::Display for LazyLogString<'a> {
         let res = {
             || -> io::Result<()> {
 
-            for (ref k, ref v) in self.logger_values.iter() {
+            for (k, v) in self.logger_values.iter() {
                 try!(ser.io().write_all(", ".as_bytes()));
                 try!(v.serialize(self.info, k, &mut ser));
             }
 
-            for &(ref k, ref v) in self.info.values().iter() {
+            for &(k, v) in self.info.values().iter() {
                 try!(ser.io().write_all(", ".as_bytes()));
                 try!(v.serialize(self.info, k, &mut ser));
             }
@@ -167,8 +167,7 @@ impl slog::Drain for StdLog {
     fn log(&self, info: &slog::Record, logger_values : &slog::OwnedKeyValueList) -> io::Result<()> {
 
         let level = match info.level() {
-            slog::Level::Critical => log::LogLevel::Error,
-            slog::Level::Error => log::LogLevel::Error,
+            slog::Level::Critical | slog::Level::Error => log::LogLevel::Error,
             slog::Level::Warning => log::LogLevel::Warn,
             slog::Level::Info => log::LogLevel::Info,
             slog::Level::Debug => log::LogLevel::Debug,
