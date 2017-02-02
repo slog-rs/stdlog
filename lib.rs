@@ -15,7 +15,7 @@
 //! See `init()` documentation for minimal working example.
 //!
 //! Note: Whilte `slog-scope` provides a similiar functionality, the `slog-scope` and `slog-stdlog`
-//! keep track of distinct logginc scopes.
+//! keep track of distinct logging scopes.
 #![warn(missing_docs)]
 
 #[macro_use]
