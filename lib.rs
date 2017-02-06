@@ -14,8 +14,17 @@
 //!
 //! See `init()` documentation for minimal working example.
 //!
-//! Note: Whilte `slog-scope` provides a similiar functionality, the `slog-scope` and `slog-stdlog`
+//! Note: While `slog-scope` provides a similiar functionality, the `slog-scope` and `slog-stdlog`
 //! keep track of distinct logging scopes.
+//!
+//! ## Compile-time log level filtering
+//!
+//! For filtering `debug!` and other `log` statements at compile-time, configure the features on
+//! the `log` crate in your `Cargo.toml`:
+//!
+//! ```norust
+//! log = { version = "*", features = ["max_level_trace", "release_max_level_warn"] }
+//! ```
 #![warn(missing_docs)]
 
 #[macro_use]
