@@ -22,6 +22,14 @@
 //! Be careful when using both methods at the same time, as a loop can be easily
 //! created: `log` -> `slog` -> `log` -> ...
 //!
+//! ## Compile-time log level filtering
+//!
+//! For filtering `debug!` and other `log` statements at compile-time, configure the features on
+//! the `log` crate in your `Cargo.toml`:
+//!
+//! ```norust
+//! log = { version = "*", features = ["max_level_trace", "release_max_level_warn"] }
+//! ```
 #![warn(missing_docs)]
 
 #[macro_use]
