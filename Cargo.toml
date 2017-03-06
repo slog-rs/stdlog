@@ -1,6 +1,6 @@
 [package]
 name = "slog-stdlog"
-version = "2.0.0-0.1"
+version = "2.0.0-0.2"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 description = "Standard Rust log crate adapter to slog-rs"
 keywords = ["slog", "logging", "json", "log"]
@@ -15,7 +15,7 @@ path = "lib.rs"
 
 [dependencies]
 slog = ">= 2.0.0-1.0, < 2.0.0-2"
-slog-scope = "0.3.0"
-slog-term = "1.3"
+slog-scope = ">= 2.0.0-1.0, < 2.0.0-2"
+slog-term = ">= 2.0.0-1.0, < 2.0.0-2"
 log = "0.3.6"
 crossbeam = "0.2.9"
