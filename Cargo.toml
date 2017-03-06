@@ -5,9 +5,9 @@ authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 description = "Standard Rust log crate adapter to slog-rs"
 keywords = ["slog", "logging", "json", "log"]
 license = "MPL-2.0"
-documentation = "https://docs.rs/slog-scope-stdlog"
-homepage = "https://github.com/slog-rs/scope-stdlog"
-repository = "https://github.com/slog-rs/scope-stdlog"
+documentation = "https://docs.rs/slog-stdlog"
+homepage = "https://github.com/slog-rs/stdlog"
+repository = "https://github.com/slog-rs/stdlog"
 readme = "README.md"
 
 [lib]
