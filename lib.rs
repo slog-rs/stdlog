@@ -24,8 +24,8 @@
 //!
 //! ## Compile-time log level filtering
 //!
-//! For filtering `debug!` and other `log` statements at compile-time, configure the features on
-//! the `log` crate in your `Cargo.toml`:
+//! For filtering `debug!` and other `log` statements at compile-time, configure
+//! the features on the `log` crate in your `Cargo.toml`:
 //!
 //! ```norust
 //! log = { version = "*", features = ["max_level_trace", "release_max_level_warn"] }
