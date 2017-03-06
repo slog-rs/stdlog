@@ -1,4 +1,4 @@
-## slog-scope-stdlog - Standard Rust log crate adapter for [slog-rs] - integrated with [`slog-scope`][slog-scope]
+## slog-stdlog - Standard Rust log crate adapter for [slog-rs]
 
 <p align="center">
   <a href="https://travis-ci.org/slog-rs/scope-stdlog">
@@ -14,11 +14,6 @@
   </a>
 </p>
 
-This is a preferred (over original `slog-stdlog`) method of backward
-compatibility with legacy `log` crate.
-
-The difference is: this library does not define own logging scopes
-functionality, and instead relies on `slog_scope::scope`.
+In slog v2 the `slog-stdlog` scopes are based on `slog-scope`.
 
 [slog-rs]: //github.com/slog-rs/slog
-[slog-scope]: //github.com/slog-rs/scope

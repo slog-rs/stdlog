@@ -1,26 +1,26 @@
-//! Standard Rust log crate adapter to slog-rs based on slog-scope.
+//! Standard Rust log crate adapter to slog-rs
 //!
-//! Note: this is a fork of a `slog-stdlog` that unlike original does
-//! share logging scopes with `slog-scope` crate. It is currently advised
-//! to prefer `slog-scope-stdlog`.
+//! Note: `slog-stdlog` for slog v2, unlike previous releases uses logging
+//! scopes provided by `slog-scope` crate instead of providing it's own ones.
 //!
 //! This crate provides two way compatibility with legacy `log` crate logging.
 //!
 //! ### `log` -> `slog`
 //!
-//! After calling `init` legacy `log` crate logging statements (eg. `debug!(...)`) will
-//! be redirected just like they originated from the logger returned by `slog_scope::logger()`.
-//! See documentation of `slog-scope` for examples of logging scope usage.
+//! After calling `init` legacy `log` crate logging statements (eg.
+//! `debug!(...)`) will be redirected just like they originated from the logger
+//! returned by `slog_scope::logger()`.  See documentation of `slog-scope` for
+//! examples of logging scope usage.
 //!
 //! ### `slog` -> `log`
 //!
-//! `StdLog` is a `slog::Drain` implementation that will log logging `Record`s just like
-//! they were created using legacy `log` statements.
+//! `StdLog` is a `slog::Drain` implementation that will log logging `Record`s
+//! just like they were created using legacy `log` statements.
 //!
 //! ### Warning
 //!
-//! Be careful when using both methods at the same time, as a loop can be easily created:
-//! `log` -> `slog` -> `log` -> ...
+//! Be careful when using both methods at the same time, as a loop can be easily
+//! created: `log` -> `slog` -> `log` -> ...
 //!
 #![warn(missing_docs)]
 
@@ -30,13 +30,11 @@ extern crate slog_term;
 extern crate slog_scope;
 extern crate log;
 
-use slog::ser;
-
 use log::LogMetadata;
 use std::{io, fmt};
-use std::io::Write;
 
 use slog::Level;
+use slog::KV;
 
 struct Logger;
 
@@ -65,15 +63,17 @@ impl log::Log for Logger {
         let line = r.location().line();
 
         let s = slog::RecordStatic {
+            location: &slog::RecordLocation {
+                file: file,
+                line: line,
+                column: 0,
+                function: "",
+                module: module,
+            },
             level: level,
-            file: file,
-            line: line,
-            column: 0,
-            function: "",
-            module: module,
-            target: target,
+            tag: target,
         };
-        slog_scope::logger().log(&slog::Record::new(&s, *args, &[]))
+        slog_scope::logger().log(&slog::Record::new(&s, args, b!()))
     }
 }
 
@@ -86,10 +86,10 @@ impl log::Log for Logger {
 /// ```
 /// #[macro_use]
 /// extern crate log;
-/// extern crate slog_scope_stdlog;
+/// extern crate slog_stdlog;
 ///
 /// fn main() {
-///     slog_scope_stdlog::init().unwrap();
+///     slog_stdlog::init().unwrap();
 ///     // Note: this `info!(...)` macro comes from `log` crate
 ///     info!("standard logging redirected to slog");
 /// }
@@ -114,11 +114,11 @@ pub struct StdLog;
 
 struct LazyLogString<'a> {
     info: &'a slog::Record<'a>,
-    logger_values: &'a slog::OwnedKeyValueList,
+    logger_values: &'a slog::OwnedKVList,
 }
 
 impl<'a> LazyLogString<'a> {
-    fn new(info: &'a slog::Record, logger_values: &'a slog::OwnedKeyValueList) -> Self {
+    fn new(info: &'a slog::Record, logger_values: &'a slog::OwnedKVList) -> Self {
 
         LazyLogString {
             info: info,
@@ -133,20 +133,12 @@ impl<'a> fmt::Display for LazyLogString<'a> {
         try!(write!(f, "{}", self.info.msg()));
 
         let io = io::Cursor::new(Vec::new());
-        let mut ser = KSV::new(io, ": ".into());
+        let mut ser = KSV::new(io);
 
         let res = {
                 || -> io::Result<()> {
-
-                    for (k, v) in self.logger_values.iter() {
-                        try!(ser.io().write_all(", ".as_bytes()));
-                        try!(v.serialize(self.info, k, &mut ser));
-                    }
-
-                    for &(k, v) in self.info.values().iter() {
-                        try!(ser.io().write_all(", ".as_bytes()));
-                        try!(v.serialize(self.info, k, &mut ser));
-                    }
+                    try!(self.logger_values.serialize(self.info, &mut ser));
+                    try!(self.info.kv().serialize(self.info, &mut ser));
                     Ok(())
                 }
             }()
@@ -163,8 +155,9 @@ impl<'a> fmt::Display for LazyLogString<'a> {
 }
 
 impl slog::Drain for StdLog {
-    type Error = io::Error;
-    fn log(&self, info: &slog::Record, logger_values: &slog::OwnedKeyValueList) -> io::Result<()> {
+    type Err = io::Error;
+    type Ok = ();
+    fn log(&self, info: &slog::Record, logger_values: &slog::OwnedKVList) -> io::Result<()> {
 
         let level = match info.level() {
             slog::Level::Critical | slog::Level::Error => log::LogLevel::Error,
@@ -174,7 +167,7 @@ impl slog::Drain for StdLog {
             slog::Level::Trace => log::LogLevel::Trace,
         };
 
-        let target = info.target();
+        let target = info.tag();
 
         let location = log::LogLocation {
             __module_path: info.module(),
@@ -193,20 +186,14 @@ impl slog::Drain for StdLog {
 
 /// Key-Separator-Value serializer
 struct KSV<W: io::Write> {
-    separator: String,
     io: W,
 }
 
 impl<W: io::Write> KSV<W> {
-    fn new(io: W, separator: String) -> Self {
+    fn new(io: W) -> Self {
         KSV {
             io: io,
-            separator: separator,
         }
-    }
-
-    fn io(&mut self) -> &mut W {
-        &mut self.io
     }
 
     fn into_inner(self) -> W {
@@ -214,81 +201,9 @@ impl<W: io::Write> KSV<W> {
     }
 }
 
-impl<W: io::Write> ser::Serializer for KSV<W> {
-    fn emit_none(&mut self, key: &str) -> ser::Result {
-        try!(write!(self.io, "{}{}{}", key, self.separator, "None"));
-        Ok(())
-    }
-    fn emit_unit(&mut self, key: &str) -> ser::Result {
-        try!(write!(self.io, "{}", key));
-        Ok(())
-    }
-
-    fn emit_bool(&mut self, key: &str, val: bool) -> ser::Result {
-        try!(write!(self.io, "{}{}{}", key, self.separator, val));
-        Ok(())
-    }
-
-    fn emit_char(&mut self, key: &str, val: char) -> ser::Result {
-        try!(write!(self.io, "{}{}{}", key, self.separator, val));
-        Ok(())
-    }
-
-    fn emit_usize(&mut self, key: &str, val: usize) -> ser::Result {
-        try!(write!(self.io, "{}{}{}", key, self.separator, val));
-        Ok(())
-    }
-    fn emit_isize(&mut self, key: &str, val: isize) -> ser::Result {
-        try!(write!(self.io, "{}{}{}", key, self.separator, val));
-        Ok(())
-    }
-
-    fn emit_u8(&mut self, key: &str, val: u8) -> ser::Result {
-        try!(write!(self.io, "{}{}{}", key, self.separator, val));
-        Ok(())
-    }
-    fn emit_i8(&mut self, key: &str, val: i8) -> ser::Result {
-        try!(write!(self.io, "{}{}{}", key, self.separator, val));
-        Ok(())
-    }
-    fn emit_u16(&mut self, key: &str, val: u16) -> ser::Result {
-        try!(write!(self.io, "{}{}{}", key, self.separator, val));
-        Ok(())
-    }
-    fn emit_i16(&mut self, key: &str, val: i16) -> ser::Result {
-        try!(write!(self.io, "{}{}{}", key, self.separator, val));
-        Ok(())
-    }
-    fn emit_u32(&mut self, key: &str, val: u32) -> ser::Result {
-        try!(write!(self.io, "{}{}{}", key, self.separator, val));
-        Ok(())
-    }
-    fn emit_i32(&mut self, key: &str, val: i32) -> ser::Result {
-        try!(write!(self.io, "{}{}{}", key, self.separator, val));
-        Ok(())
-    }
-    fn emit_f32(&mut self, key: &str, val: f32) -> ser::Result {
-        try!(write!(self.io, "{}{}{}", key, self.separator, val));
-        Ok(())
-    }
-    fn emit_u64(&mut self, key: &str, val: u64) -> ser::Result {
-        try!(write!(self.io, "{}{}{}", key, self.separator, val));
-        Ok(())
-    }
-    fn emit_i64(&mut self, key: &str, val: i64) -> ser::Result {
-        try!(write!(self.io, "{}{}{}", key, self.separator, val));
-        Ok(())
-    }
-    fn emit_f64(&mut self, key: &str, val: f64) -> ser::Result {
-        try!(write!(self.io, "{}{}{}", key, self.separator, val));
-        Ok(())
-    }
-    fn emit_str(&mut self, key: &str, val: &str) -> ser::Result {
-        try!(write!(self.io, "{}{}{}", key, self.separator, val));
-        Ok(())
-    }
-    fn emit_arguments(&mut self, key: &str, val: &fmt::Arguments) -> ser::Result {
-        try!(write!(self.io, "{}{}{}", key, self.separator, val));
+impl<W: io::Write> slog::Serializer for KSV<W> {
+    fn emit_arguments(&mut self, key: &str, val: &fmt::Arguments) -> slog::Result {
+        try!(write!(self.io, ", {}: {}", key, val));
         Ok(())
     }
 }
