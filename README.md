@@ -1,5 +1,3 @@
-## slog-stdlog - Standard Rust log crate adapter for [slog-rs]
-
 <p align="center">
   <a href="https://travis-ci.org/slog-rs/stdlog">
       <img src="https://img.shields.io/travis/slog-rs/stdlog/master.svg" alt="Travis CI Build Status">
@@ -14,6 +12,8 @@
   </a>
 </p>
 
-In slog v2 the `slog-stdlog` scopes are based on `slog-scope`.
+## slog-stdlog - Standard Rust log crate adapter for [slog-rs]
+
+For more information, help, to report issues etc. see [slog-rs][slog-rs].
 
 [slog-rs]: //github.com/slog-rs/slog
