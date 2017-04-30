@@ -1,21 +1,24 @@
-//! Standard Rust log crate adapter to slog-rs
+//! `log` crate adapter for slog-rs
 //!
-//! Note: `slog-stdlog` for slog v2, unlike previous releases uses logging
-//! scopes provided by `slog-scope` crate instead of providing it's own ones.
+//! This crate provides two way compatibility with legacy (ha! or shall we
+//! say... standard) `log` crate logging.
 //!
-//! This crate provides two way compatibility with legacy `log` crate logging.
+//! Note: `slog-stdlog` v2, unlike previous releases, uses logging scopes
+//! provided by `slog-scope` crate instead of it's own.
 //!
 //! ### `log` -> `slog`
 //!
-//! After calling `init` legacy `log` crate logging statements (eg.
-//! `debug!(...)`) will be redirected just like they originated from the logger
-//! returned by `slog_scope::logger()`.  See documentation of `slog-scope` for
-//! examples of logging scope usage.
+//! After calling `init()` `slog-stdlog` will take a role of `log` crate
+//! backend, forwarding all the `log` logging to `slog_scope::logger()`.
+//! In other words, any `log` crate logging statement will behave like it was `slog`
+//! logging statement executed with logger returned by `slog_scope::logger()`.
+//! See documentation of `slog-scope` for more information about logging scopes.
 //!
 //! ### `slog` -> `log`
 //!
-//! `StdLog` is a `slog::Drain` implementation that will log logging `Record`s
-//! just like they were created using legacy `log` statements.
+//! `StdLog` is `slog::Drain` that will pass all `Record`s passing through it to
+//! `log` crate just like they were crated with `log` crate logging macros in
+//! the first place.
 //!
 //! ### Warning
 //!
@@ -34,7 +37,6 @@
 
 #[macro_use]
 extern crate slog;
-extern crate slog_term;
 extern crate slog_scope;
 extern crate log;
 
@@ -72,24 +74,24 @@ impl log::Log for Logger {
 
         let s = slog::RecordStatic {
             location: &slog::RecordLocation {
-                file: file,
-                line: line,
-                column: 0,
-                function: "",
-                module: module,
-            },
+                           file: file,
+                           line: line,
+                           column: 0,
+                           function: "",
+                           module: module,
+                       },
             level: level,
             tag: target,
         };
-        slog_scope::logger().log(&slog::Record::new(&s, args, b!()))
+        slog_scope::with_logger(|logger| logger.log(&slog::Record::new(&s, args, b!())))
+
     }
 }
 
-/// Minimal initialization with default drain
+/// Register `slog-stdlog` as `log` backend.
 ///
-/// The exact default drain is unspecified and will
-/// change in future versions! Use `set_logger` instead
-/// to build customized drain.
+/// This will pass all logging statements crated with `log`
+/// crate to current `slog-scope::logger()`.
 ///
 /// ```
 /// #[macro_use]
@@ -104,15 +106,17 @@ impl log::Log for Logger {
 /// ```
 pub fn init() -> Result<(), log::SetLoggerError> {
     log::set_logger(|max_log_level| {
-        max_log_level.set(log::LogLevelFilter::max());
-        Box::new(Logger)
-    })
+                        max_log_level.set(log::LogLevelFilter::max());
+                        Box::new(Logger)
+                    })
 }
 
 /// Drain logging `Record`s into `log` crate
 ///
-/// Using `StdLog` is effectively the same as using `log::info!(...)` and
-/// other standard logging statements.
+/// Any `Record` passing through this `Drain` will be forwarded
+/// to `log` crate, just like it was created with `log` crate macros
+/// in the first place. The message and key-value pairs will be formated
+/// to be one string.
 ///
 /// Caution needs to be taken to prevent circular loop where `Logger`
 /// installed via `slog-stdlog::set_logger` would log things to a `StdLog`
@@ -144,13 +148,13 @@ impl<'a> fmt::Display for LazyLogString<'a> {
         let mut ser = KSV::new(io);
 
         let res = {
-                || -> io::Result<()> {
-                    try!(self.logger_values.serialize(self.info, &mut ser));
-                    try!(self.info.kv().serialize(self.info, &mut ser));
-                    Ok(())
-                }
-            }()
-            .map_err(|_| fmt::Error);
+            || -> io::Result<()> {
+                try!(self.logger_values.serialize(self.info, &mut ser));
+                try!(self.info.kv().serialize(self.info, &mut ser));
+                Ok(())
+            }
+        }()
+                .map_err(|_| fmt::Error);
 
         try!(res);
 
@@ -199,9 +203,7 @@ struct KSV<W: io::Write> {
 
 impl<W: io::Write> KSV<W> {
     fn new(io: W) -> Self {
-        KSV {
-            io: io,
-        }
+        KSV { io: io }
     }
 
     fn into_inner(self) -> W {
