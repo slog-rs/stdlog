@@ -1,15 +1,11 @@
 //! `log` crate adapter for slog-rs
 //!
-//! This crate provides two way compatibility with legacy (ha! or shall we
-//! say... standard) `log` crate logging.
-//!
-//! Note: `slog-stdlog` v2, unlike previous releases, uses logging scopes
-//! provided by `slog-scope` crate instead of it's own.
+//! This crate provides two way compatibility with Rust standard `log` crate.
 //!
 //! ### `log` -> `slog`
 //!
 //! After calling `init()` `slog-stdlog` will take a role of `log` crate
-//! backend, forwarding all the `log` logging to `slog_scope::logger()`.
+//! back-end, forwarding all the `log` logging to `slog_scope::logger()`.
 //! In other words, any `log` crate logging statement will behave like it was `slog`
 //! logging statement executed with logger returned by `slog_scope::logger()`.
 //! See documentation of `slog-scope` for more information about logging scopes.
@@ -19,6 +15,20 @@
 //! `StdLog` is `slog::Drain` that will pass all `Record`s passing through it to
 //! `log` crate just like they were crated with `log` crate logging macros in
 //! the first place.
+//!
+//! ## `slog-scope`
+//!
+//! Since `log` does not have any form of context, and does not support `Logger`
+//! `slog-stdlog` relies on "logging scopes" to establish it.
+//!
+//! You must set up logging context for `log` -> `slog` via `slog_scope::scope`
+//! or `slog_scope::set_global_logger`. Setting a global logger upfront via
+//! `slog_scope::set_global_logger` is highly recommended.
+//!
+//! Note: Since `slog-stdlog` v2, unlike previous releases, `slog-stdlog` uses
+//! logging scopes provided by `slog-scope` crate instead of it's own.
+//!
+//! Refer to `slog-scope` crate documentation for more information.
 //!
 //! ### Warning
 //!

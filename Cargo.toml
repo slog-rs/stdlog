@@ -1,10 +1,10 @@
 [package]
 name = "slog-stdlog"
-version = "2.0.0"
+version = "3.0.0"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 description = "`log` crate adapter for slog-rs"
 keywords = ["slog", "logging", "json", "log"]
-license = "MPL-2.0"
+license = "MPL-2.0/MIT/Apache-2.0"
 documentation = "https://docs.rs/slog-stdlog"
 homepage = "https://github.com/slog-rs/stdlog"
 repository = "https://github.com/slog-rs/stdlog"
@@ -15,6 +15,6 @@ path = "lib.rs"
 
 [dependencies]
 slog = "2"
-slog-scope = "3"
+slog-scope = "4"
 log = "0.3.6"
 crossbeam = "0.2.9"

@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 3.0.0 - 2017-05-28
+### Changed
+
+* Update to slog-scope v4 wh  default to panicking instead of discarding
+  messages. Be warned!
+* Relicensed under MPL-2.0/MIT/Apache-2.0
+
 ## 2.0.0-4.0 - 2017-04-29
 
 ### Changed
