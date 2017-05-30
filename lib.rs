@@ -109,7 +109,7 @@ impl log::Log for Logger {
 /// extern crate slog_stdlog;
 ///
 /// fn main() {
-///     slog_stdlog::init().unwrap();
+///     let _guard = slog_stdlog::init().unwrap();
 ///     // Note: this `info!(...)` macro comes from `log` crate
 ///     info!("standard logging redirected to slog");
 /// }
