@@ -109,17 +109,23 @@ impl log::Log for Logger {
 /// ```
 /// #[macro_use]
 /// extern crate log;
+/// #[macro_use(slog_o, slog_kv)]
+/// extern crate slog;
 /// extern crate slog_stdlog;
 /// extern crate slog_scope;
 /// extern crate slog_term;
+/// extern crate slog_async;
+///
+/// use slog::Drain;
 ///
 /// fn main() {
-///     let decorator = slog_term::TermDecorator::new();
+///     let decorator = slog_term::TermDecorator::new().build();
 ///     let drain = slog_term::FullFormat::new(decorator).build().fuse();
-///     let logger = slog::Logger::root(drain, o!("version" => env!("CARGO_PKG_VERSION")));
+///     let drain = slog_async::Async::new(drain).build().fuse();
+///     let logger = slog::Logger::root(drain, slog_o!("version" => env!("CARGO_PKG_VERSION")));
 ///
-///     let _guard = slog_scope::set_global_logger(logger).unwrap();
-///     let _guard = slog_stdlog::init().unwrap();
+///     let _scope_guard = slog_scope::set_global_logger(logger);
+///     let _log_guard = slog_stdlog::init().unwrap();
 ///     // Note: this `info!(...)` macro comes from `log` crate
 ///     info!("standard logging redirected to slog");
 /// }
