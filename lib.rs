@@ -8,7 +8,10 @@
 //! back-end, forwarding all the `log` logging to `slog_scope::logger()`.
 //! In other words, any `log` crate logging statement will behave like it was `slog`
 //! logging statement executed with logger returned by `slog_scope::logger()`.
+//!
 //! See documentation of `slog-scope` for more information about logging scopes.
+//!
+//! See [`init` documentation](fn.init.html) for an example.
 //!
 //! ### `slog` -> `log`
 //!
@@ -107,8 +110,15 @@ impl log::Log for Logger {
 /// #[macro_use]
 /// extern crate log;
 /// extern crate slog_stdlog;
+/// extern crate slog_scope;
+/// extern crate slog_term;
 ///
 /// fn main() {
+///     let decorator = slog_term::TermDecorator::new();
+///     let drain = slog_term::FullFormat::new(decorator).build().fuse();
+///     let logger = slog::Logger::root(drain, o!("version" => env!("CARGO_PKG_VERSION")));
+///
+///     let _guard = slog_scope::set_global_logger(logger).unwrap();
 ///     let _guard = slog_stdlog::init().unwrap();
 ///     // Note: this `info!(...)` macro comes from `log` crate
 ///     info!("standard logging redirected to slog");
