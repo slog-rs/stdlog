@@ -1,6 +1,6 @@
 [package]
 name = "slog-stdlog"
-version = "3.0.1"
+version = "3.0.2"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 description = "`log` crate adapter for slog-rs"
 keywords = ["slog", "logging", "json", "log"]
