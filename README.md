@@ -14,7 +14,7 @@
 
 ## slog-stdlog - `log` crate adapter for [slog-rs]
 
-See [slog-stdlog documentaiton](https://docs.rs/slog-stdlog) for details.
+See [slog-stdlog documentation](https://docs.rs/slog-stdlog) for details.
 
 For more information, help, to report issues etc. see [slog-rs][slog-rs].
 
