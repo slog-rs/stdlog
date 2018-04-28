@@ -238,7 +238,7 @@ impl<W: io::Write> KSV<W> {
 }
 
 impl<W: io::Write> slog::Serializer for KSV<W> {
-    fn emit_arguments(&mut self, key: &str, val: &fmt::Arguments) -> slog::Result {
+    fn emit_arguments(&mut self, key: slog::Key, val: &fmt::Arguments) -> slog::Result {
         try!(write!(self.io, ", {}: {}", key, val));
         Ok(())
     }
