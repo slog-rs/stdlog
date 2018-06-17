@@ -16,9 +16,10 @@ path = "lib.rs"
 [dependencies]
 slog = "2"
 slog-scope = "4"
-log = "0.3.6"
+log = {version = "0.4.2", features = ["std"] }
 crossbeam = "0.2.9"
 
 [dev-dependencies]
 slog-term = "2"
 slog-async = "2"
+
