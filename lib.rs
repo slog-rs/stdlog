@@ -53,7 +53,7 @@ extern crate slog;
 extern crate slog_scope;
 extern crate log;
 
-use log::LogMetadata;
+use log::Metadata;
 use std::{io, fmt};
 
 use slog::Level;
@@ -61,43 +61,44 @@ use slog::KV;
 
 struct Logger;
 
-fn log_to_slog_level(level: log::LogLevel) -> Level {
+fn log_to_slog_level(level: log::Level) -> Level {
     match level {
-        log::LogLevel::Trace => Level::Trace,
-        log::LogLevel::Debug => Level::Debug,
-        log::LogLevel::Info => Level::Info,
-        log::LogLevel::Warn => Level::Warning,
-        log::LogLevel::Error => Level::Error,
+        log::Level::Trace => Level::Trace,
+        log::Level::Debug => Level::Debug,
+        log::Level::Info => Level::Info,
+        log::Level::Warn => Level::Warning,
+        log::Level::Error => Level::Error,
     }
 }
 
 impl log::Log for Logger {
-    fn enabled(&self, _: &LogMetadata) -> bool {
+    fn enabled(&self, _: &Metadata) -> bool {
         true
     }
 
-    fn log(&self, r: &log::LogRecord) {
+    fn log(&self, r: &log::Record) {
         let level = log_to_slog_level(r.metadata().level());
 
         let args = r.args();
         let target = r.target();
-        let module = r.location().__module_path;
-        let file = r.location().__file;
-        let line = r.location().line();
 
         let s = slog::RecordStatic {
             location: &slog::RecordLocation {
-                           file: file,
-                           line: line,
+                           file: r.file().unwrap_or("<unknown>"),
+                           line: 0,
                            column: 0,
-                           function: "",
-                           module: module,
+                           function: "<unknown>",
+                           module: r.module_path().unwrap_or("<unknown>"),
                        },
-            level: level,
+            level,
             tag: target,
         };
         slog_scope::with_logger(|logger| logger.log(&slog::Record::new(&s, args, b!())))
 
+    }
+
+    fn flush(&self) {
+        //nothing buffered
     }
 }
 
@@ -131,10 +132,8 @@ impl log::Log for Logger {
 /// }
 /// ```
 pub fn init() -> Result<(), log::SetLoggerError> {
-    log::set_logger(|max_log_level| {
-                        max_log_level.set(log::LogLevelFilter::max());
-                        Box::new(Logger)
-                    })
+    log::set_max_level(log::LevelFilter::max());
+    log::set_boxed_logger(Box::new(Logger))
 }
 
 /// Drain logging `Record`s into `log` crate
@@ -198,26 +197,27 @@ impl slog::Drain for StdLog {
     fn log(&self, info: &slog::Record, logger_values: &slog::OwnedKVList) -> io::Result<()> {
 
         let level = match info.level() {
-            slog::Level::Critical | slog::Level::Error => log::LogLevel::Error,
-            slog::Level::Warning => log::LogLevel::Warn,
-            slog::Level::Info => log::LogLevel::Info,
-            slog::Level::Debug => log::LogLevel::Debug,
-            slog::Level::Trace => log::LogLevel::Trace,
+            slog::Level::Critical | slog::Level::Error => log::Level::Error,
+            slog::Level::Warning => log::Level::Warn,
+            slog::Level::Info => log::Level::Info,
+            slog::Level::Debug => log::Level::Debug,
+            slog::Level::Trace => log::Level::Trace,
         };
 
         let target = info.tag();
 
-        let location = log::LogLocation {
-            __module_path: info.module(),
-            __file: info.file(),
-            __line: info.line(),
-        };
+        //FIXME: can't make this work...
+//        let lazy = LazyLogString::new(info, logger_values);
 
-        let lazy = LazyLogString::new(info, logger_values);
-        // Please don't yell at me for this! :D
-        // https://github.com/rust-lang-nursery/log/issues/95
-        log::__log(level, target, &location, format_args!("{}", lazy));
-
+        let r = log::RecordBuilder::new()
+            .level(level)
+            .target(target)
+            .module_path(Some(info.module()))
+            .file(Some(info.file()))
+            .line(Some(info.line()))
+//            .args(format_args!("{}", "xxx"))
+            .build();
+        log::logger().log(&r);
         Ok(())
     }
 }
