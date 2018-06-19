@@ -23,3 +23,6 @@ crossbeam = "0.2.9"
 slog-term = "2"
 slog-async = "2"
 
+[patch.crates-io]
+slog = { git = "https://github.com/jacekchmiel/slog", branch = "log-0.4-support" }
+slog-async = { git = "https://github.com/jacekchmiel/slog-async", branch = "log-0.4-support" }
