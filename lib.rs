@@ -50,11 +50,11 @@
 
 #[macro_use]
 extern crate slog;
-extern crate slog_scope;
 extern crate log;
+extern crate slog_scope;
 
 use log::LogMetadata;
-use std::{io, fmt};
+use std::{fmt, io};
 
 use slog::Level;
 use slog::KV;
@@ -87,17 +87,16 @@ impl log::Log for Logger {
 
         let s = slog::RecordStatic {
             location: &slog::RecordLocation {
-                           file: file,
-                           line: line,
-                           column: 0,
-                           function: "",
-                           module: module,
-                       },
+                file: file,
+                line: line,
+                column: 0,
+                function: "",
+                module: module,
+            },
             level: level,
             tag: target,
         };
         slog_scope::with_logger(|logger| logger.log(&slog::Record::new(&s, args, b!())))
-
     }
 }
 
@@ -131,10 +130,45 @@ impl log::Log for Logger {
 /// }
 /// ```
 pub fn init() -> Result<(), log::SetLoggerError> {
+    init_with_level(log::LogLevel::max())
+}
+
+/// Register `slog-stdlog` as `log` backend.
+/// Pass a log::LogLevel to do the log filter explicitly.
+///
+/// This will pass all logging statements crated with `log`
+/// crate to current `slog-scope::logger()`.
+///
+/// ```
+/// #[macro_use]
+/// extern crate log;
+/// #[macro_use(slog_o, slog_kv)]
+/// extern crate slog;
+/// extern crate slog_stdlog;
+/// extern crate slog_scope;
+/// extern crate slog_term;
+/// extern crate slog_async;
+///
+/// use slog::Drain;
+///
+/// fn main() {
+///     let decorator = slog_term::TermDecorator::new().build();
+///     let drain = slog_term::FullFormat::new(decorator).build().fuse();
+///     let drain = slog_async::Async::new(drain).build().fuse();
+///     let logger = slog::Logger::root(drain, slog_o!("version" => env!("CARGO_PKG_VERSION")));
+///
+///     let _scope_guard = slog_scope::set_global_logger(logger);
+///     let _log_guard = slog_stdlog::init_with_level(log::LogLevel::Error).unwrap();
+///     // Note: this `info!(...)` macro comes from `log` crate
+///     info!("standard logging redirected to slog");
+///     error!("standard logging redirected to slog");
+/// }
+/// ```
+pub fn init_with_level(level: log::LogLevel) -> Result<(), log::SetLoggerError> {
     log::set_logger(|max_log_level| {
-                        max_log_level.set(log::LogLevelFilter::max());
-                        Box::new(Logger)
-                    })
+        max_log_level.set(level.to_log_level_filter());
+        Box::new(Logger)
+    })
 }
 
 /// Drain logging `Record`s into `log` crate
@@ -157,7 +191,6 @@ struct LazyLogString<'a> {
 
 impl<'a> LazyLogString<'a> {
     fn new(info: &'a slog::Record, logger_values: &'a slog::OwnedKVList) -> Self {
-
         LazyLogString {
             info: info,
             logger_values: logger_values,
@@ -167,7 +200,6 @@ impl<'a> LazyLogString<'a> {
 
 impl<'a> fmt::Display for LazyLogString<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-
         try!(write!(f, "{}", self.info.msg()));
 
         let io = io::Cursor::new(Vec::new());
@@ -179,16 +211,13 @@ impl<'a> fmt::Display for LazyLogString<'a> {
                 try!(self.info.kv().serialize(self.info, &mut ser));
                 Ok(())
             }
-        }()
-                .map_err(|_| fmt::Error);
+        }().map_err(|_| fmt::Error);
 
         try!(res);
 
         let values = ser.into_inner().into_inner();
 
-
         write!(f, "{}", String::from_utf8_lossy(&values))
-
     }
 }
 
@@ -196,7 +225,6 @@ impl slog::Drain for StdLog {
     type Err = io::Error;
     type Ok = ();
     fn log(&self, info: &slog::Record, logger_values: &slog::OwnedKVList) -> io::Result<()> {
-
         let level = match info.level() {
             slog::Level::Critical | slog::Level::Error => log::LogLevel::Error,
             slog::Level::Warning => log::LogLevel::Warn,
