@@ -233,7 +233,10 @@ impl slog::Drain for StdLog {
             slog::Level::Trace => log::LogLevel::Trace,
         };
 
-        let target = info.tag();
+        let mut target = info.tag();
+        if target.is_empty() {
+            target = info.module();
+        }
 
         let location = log::LogLocation {
             __module_path: info.module(),
