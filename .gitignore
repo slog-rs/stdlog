@@ -3,3 +3,6 @@
 /tags
 /.cargo
 /rusty-tags.vi
+
+/.idea
+*.iml

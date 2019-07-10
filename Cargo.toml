@@ -9,6 +9,7 @@ documentation = "https://docs.rs/slog-stdlog"
 homepage = "https://github.com/slog-rs/stdlog"
 repository = "https://github.com/slog-rs/stdlog"
 readme = "README.md"
+edition = "2018"
 
 [lib]
 path = "lib.rs"
@@ -16,8 +17,8 @@ path = "lib.rs"
 [dependencies]
 slog = "2"
 slog-scope = "4"
-log = "0.3.6"
-crossbeam = "0.2.9"
+log = { version = "0.4.6", features = ["std"] }
+crossbeam = "0.7.1"
 
 [dev-dependencies]
 slog-term = "2"
