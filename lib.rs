@@ -66,16 +66,16 @@ fn log_to_slog_level(level: log::Level) -> Level {
 }
 
 fn record_as_location(r: &log::Record) -> slog::RecordLocation {
-    let module = r.module_path().unwrap_or("<unknown>");
-    let file = r.file().unwrap_or("<unknown>");
+    let module = r.module_path_static().unwrap_or("<unknown>");
+    let file = r.file_static().unwrap_or("<unknown>");
     let line = r.line().unwrap_or_default();
 
     slog::RecordLocation {
-        file: unsafe { &*(file as *const _) }, // Lifetime extending for initially static ref
+        file,
         line,
         column: 0,
         function: "",
-        module: unsafe { &*(module as *const _) }, // Lifetime extending for initially static ref
+        module,
     }
 }
 
