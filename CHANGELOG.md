@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 4.0.0 - 2018-08-13
+### Changed
+
+* Update to `log` 0.4
+
 ## 3.0.2 - 2017-05-29
 ### Fixed
 
