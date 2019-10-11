@@ -15,7 +15,7 @@ edition = "2018"
 path = "lib.rs"
 
 [dependencies]
-slog = "2"
+slog = "2.4"
 slog-scope = "4"
 log = { version = "0.4.8", features = ["std"] }
 crossbeam = "0.7.1"
