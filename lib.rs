@@ -51,7 +51,7 @@
 extern crate log;
 
 use std::{fmt, io};
-use slog::{Level, KV, b};
+use slog::{Level, KV, b, Record, Serializer};
 
 struct Logger;
 
@@ -89,16 +89,58 @@ impl log::Log for Logger {
 
         let args = r.args();
         let target = r.target();
+        let key_values = r.key_values();
         let location = &record_as_location(r);
         let s = slog::RecordStatic {
             location,
             level,
             tag: target,
         };
-        slog_scope::with_logger(|logger| logger.log(&slog::Record::new(&s, args, b!())))
+        let mut visitor = Visitor::new();
+        key_values.visit(&mut visitor).unwrap();
+        slog_scope::with_logger(|logger| logger.log(&slog::Record::new(&s, args, b!(visitor))))
     }
 
     fn flush(&self) {}
+}
+
+struct Visitor {
+    kvs: Vec<(String, String)>,
+}
+
+impl Visitor {
+    pub fn new() -> Self {
+        Self { kvs: vec![] }
+    }
+}
+
+impl<'kvs, 'a> log::kv::Visitor<'kvs> for Visitor {
+    fn visit_pair(
+        &mut self,
+        key: log::kv::Key<'kvs>,
+        val: log::kv::Value<'kvs>,
+    ) -> Result<(), log::kv::Error> {
+        let key = key.to_string();
+        if let Some(val) = val.to_borrowed_str() {
+            let val = val.to_string();
+            self.kvs.push((key, val));
+        }
+        Ok(())
+    }
+}
+
+fn string_to_static_str(s: String) -> &'static str {
+    Box::leak(s.into_boxed_str())
+}
+
+impl slog::KV for Visitor {
+    fn serialize(&self, _record: &Record, serializer: &mut dyn Serializer) -> slog::Result {
+        for (key, val) in &self.kvs {
+            let key = string_to_static_str(key.to_owned());
+            serializer.emit_str(key, val.as_str())?;
+        }
+        Ok(())
+    }
 }
 
 /// Register `slog-stdlog` as `log` backend.
