@@ -14,10 +14,14 @@ edition = "2018"
 [lib]
 path = "lib.rs"
 
+[features]
+default = []
+kv_unstable = ["log/kv_unstable_std"]
+
 [dependencies]
 slog = "2.4"
 slog-scope = "4"
-log = { version = "0.4.11", features = ["std", "kv_unstable"] }
+log = { version = "0.4.11", features = ["std"] }
 
 [dev-dependencies]
 slog-term = "2"
