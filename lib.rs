@@ -92,7 +92,6 @@ impl log::Log for Logger {
         true
     }
 
-    #[cfg(not(feature = "kv_unstable"))]
     fn log(&self, r: &log::Record) {
         let level = log_to_slog_level(r.metadata().level());
 
@@ -104,25 +103,15 @@ impl log::Log for Logger {
             level,
             tag: target,
         };
+        #[cfg(feature = "kv_unstable")]
+        {
+             let key_values = r.key_values();
+             let mut visitor = kv::Visitor::new();
+             key_values.visit(&mut visitor).unwrap();
+             slog_scope::with_logger(|logger| logger.log(&slog::Record::new(&s, args, b!(visitor))))
+        }
+        #[cfg(not(feature = "kv_unstable"))]
         slog_scope::with_logger(|logger| logger.log(&slog::Record::new(&s, args, b!())))
-    }
-
-    #[cfg(feature = "kv_unstable")]
-    fn log(&self, r: &log::Record) {
-        let level = log_to_slog_level(r.metadata().level());
-
-        let args = r.args();
-        let target = r.target();
-        let key_values = r.key_values();
-        let location = &record_as_location(r);
-        let s = slog::RecordStatic {
-            location,
-            level,
-            tag: target,
-        };
-        let mut visitor = kv::Visitor::new();
-        key_values.visit(&mut visitor).unwrap();
-        slog_scope::with_logger(|logger| logger.log(&slog::Record::new(&s, args, b!(visitor))))
     }
 
     fn flush(&self) {}
