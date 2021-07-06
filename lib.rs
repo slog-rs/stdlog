@@ -55,11 +55,7 @@ mod kv;
 
 use std::{fmt, io};
 
-#[cfg(not(feature = "kv_unstable"))]
 use slog::{b, Level, KV};
-
-#[cfg(feature = "kv_unstable")]
-use slog::{b, Level, Record, Serializer, KV};
 
 struct Logger;
 

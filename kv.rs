@@ -1,4 +1,4 @@
-use slog::{Level, Record, Serializer, KV};
+use slog::{Record, Serializer};
 
 pub(crate) struct Visitor {
     kvs: Vec<(String, String)>,
@@ -25,15 +25,10 @@ impl<'kvs, 'a> log::kv::Visitor<'kvs> for Visitor {
     }
 }
 
-fn string_to_static_str(s: String) -> &'static str {
-    Box::leak(s.into_boxed_str())
-}
-
 impl slog::KV for Visitor {
     fn serialize(&self, _record: &Record, serializer: &mut dyn Serializer) -> slog::Result {
         for (key, val) in &self.kvs {
-            let key = string_to_static_str(key.to_owned());
-            serializer.emit_str(key, val.as_str())?;
+            serializer.emit_str(key.to_owned().into(), val.as_str())?;
         }
         Ok(())
     }
