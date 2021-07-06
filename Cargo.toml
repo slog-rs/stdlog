@@ -16,7 +16,7 @@ path = "lib.rs"
 
 [features]
 default = []
-kv_unstable = ["log/kv_unstable_std"]
+kv_unstable = ["log/kv_unstable_std", "slog/dynamic-keys"]
 
 [dependencies]
 slog = "2.4"
