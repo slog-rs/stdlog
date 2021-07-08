@@ -136,7 +136,7 @@ impl log::Log for Logger {
 ///     let logger = slog::Logger::root(drain, slog_o!("version" => env!("CARGO_PKG_VERSION")));
 ///
 ///     let _scope_guard = slog_scope::set_global_logger(logger);
-///     let _log_guard = slog_stdlog::init().unwrap();
+///     slog_stdlog::init().unwrap();
 ///     // Note: this `info!(...)` macro comes from `log` crate
 ///     info!("standard logging redirected to slog");
 /// }
@@ -170,7 +170,7 @@ pub fn init() -> Result<(), log::SetLoggerError> {
 ///     let logger = slog::Logger::root(drain, slog_o!("version" => env!("CARGO_PKG_VERSION")));
 ///
 ///     let _scope_guard = slog_scope::set_global_logger(logger);
-///     let _log_guard = slog_stdlog::init_with_level(log::Level::Error).unwrap();
+///     slog_stdlog::init_with_level(log::Level::Error).unwrap();
 ///     // Note: this `info!(...)` macro comes from `log` crate
 ///     info!("standard logging redirected to slog");
 ///     error!("standard logging redirected to slog");
