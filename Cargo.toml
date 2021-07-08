@@ -1,6 +1,6 @@
 [package]
 name = "slog-stdlog"
-version = "4.1.0"
+version = "4.2.0"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 description = "`log` crate adapter for slog-rs"
 keywords = ["slog", "logging", "json", "log"]
@@ -17,6 +17,7 @@ path = "lib.rs"
 [features]
 default = []
 kv_unstable = ["log/kv_unstable_std", "slog/dynamic-keys"]
+record_location_unstable = []
 
 [dependencies]
 slog = "2.4"
