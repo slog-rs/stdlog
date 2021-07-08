@@ -114,10 +114,10 @@ impl log::Log for Logger {
         };
         #[cfg(feature = "kv_unstable")]
         {
-            let key_values = r.key_values();
-            let mut visitor = kv::Visitor::new();
-            key_values.visit(&mut visitor).unwrap();
-            slog_scope::with_logger(|logger| logger.log(&slog::Record::new(&s, args, b!(visitor))))
+             let key_values = r.key_values();
+             let mut visitor = kv::Visitor::new();
+             key_values.visit(&mut visitor).unwrap();
+             slog_scope::with_logger(|logger| logger.log(&slog::Record::new(&s, args, b!(visitor))))
         }
         #[cfg(not(feature = "kv_unstable"))]
         slog_scope::with_logger(|logger| logger.log(&slog::Record::new(&s, args, b!())))
@@ -266,11 +266,7 @@ impl slog::Drain for StdLog {
         let lazy = LazyLogString::new(info, logger_values);
         // Please don't yell at me for this! :D
         // https://github.com/rust-lang-nursery/log/issues/95
-        log::__private_api_log(
-            format_args!("{}", lazy),
-            level,
-            &(target, info.module(), info.file(), info.line()),
-        );
+        log::__private_api_log(format_args!("{}", lazy), level, &(target, info.module(), info.file(), info.line()));
 
         Ok(())
     }
