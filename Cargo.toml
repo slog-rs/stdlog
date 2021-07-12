@@ -23,6 +23,7 @@ record_location_unstable = []
 slog = "2.4"
 slog-scope = "4"
 log = { version = "0.4.11", features = ["std"] }
+cached = "0.23.0"
 
 [dev-dependencies]
 slog-term = "2"

@@ -68,23 +68,35 @@ fn log_to_slog_level(level: log::Level) -> Level {
     }
 }
 
-fn record_as_location(r: &log::Record) -> slog::RecordLocation {
-    // Warning: expands Record module and file names for non-static strings by leaking strings
-    #[cfg(feature = "record_location_unstable")]
-    let module = r.module_path_static().unwrap_or(match r.module_path() {
-        Some(s) => Box::leak(s.to_string().into_boxed_str()),
+/// Gets a static string for Record location information.
+/// Uses a cache to avoid leaking each string more than once.
+#[cfg(feature = "record_location_unstable")]
+#[cached::proc_macro::cached]
+fn get_static_info(
+    static_info: Option<&'static str>,
+    non_static_info: Option<String>,
+) -> &'static str {
+    static_info.unwrap_or(match non_static_info {
+        Some(s) => Box::leak(s.into_boxed_str()),
         None => "unknown",
-    });
-    #[cfg(feature = "record_location_unstable")]
-    let file = r.file_static().unwrap_or(match r.file() {
-        Some(s) => Box::leak(s.to_string().into_boxed_str()),
-        None => "unknown",
-    });
+    })
+}
 
+fn record_as_location(r: &log::Record) -> slog::RecordLocation {
     #[cfg(not(feature = "record_location_unstable"))]
     let module = r.module_path_static().unwrap_or("<unknown>");
     #[cfg(not(feature = "record_location_unstable"))]
     let file = r.file_static().unwrap_or("<unknown>");
+
+    // Warning: expands Record module and file names for non-static strings by leaking strings
+    #[cfg(feature = "record_location_unstable")]
+    let module = get_static_info(
+        r.module_path_static(),
+        r.module_path().map(|s| s.to_string()),
+    );
+    #[cfg(feature = "record_location_unstable")]
+    let file = get_static_info(r.file_static(), r.file().map(|s| s.to_string()));
+
     let line = r.line().unwrap_or_default();
 
     slog::RecordLocation {
@@ -114,10 +126,10 @@ impl log::Log for Logger {
         };
         #[cfg(feature = "kv_unstable")]
         {
-             let key_values = r.key_values();
-             let mut visitor = kv::Visitor::new();
-             key_values.visit(&mut visitor).unwrap();
-             slog_scope::with_logger(|logger| logger.log(&slog::Record::new(&s, args, b!(visitor))))
+            let key_values = r.key_values();
+            let mut visitor = kv::Visitor::new();
+            key_values.visit(&mut visitor).unwrap();
+            slog_scope::with_logger(|logger| logger.log(&slog::Record::new(&s, args, b!(visitor))))
         }
         #[cfg(not(feature = "kv_unstable"))]
         slog_scope::with_logger(|logger| logger.log(&slog::Record::new(&s, args, b!())))
@@ -266,7 +278,11 @@ impl slog::Drain for StdLog {
         let lazy = LazyLogString::new(info, logger_values);
         // Please don't yell at me for this! :D
         // https://github.com/rust-lang-nursery/log/issues/95
-        log::__private_api_log(format_args!("{}", lazy), level, &(target, info.module(), info.file(), info.line()));
+        log::__private_api_log(
+            format_args!("{}", lazy),
+            level,
+            &(target, info.module(), info.file(), info.line()),
+        );
 
         Ok(())
     }
