@@ -72,14 +72,11 @@ fn log_to_slog_level(level: log::Level) -> Level {
 /// Uses a cache to avoid leaking each string more than once.
 #[cfg(feature = "record_location_unstable")]
 #[cached::proc_macro::cached]
-fn get_static_info(
-    static_info: Option<&'static str>,
-    non_static_info: Option<String>,
-) -> &'static str {
-    static_info.unwrap_or(match non_static_info {
+fn get_static_info(non_static_info: Option<String>) -> &'static str {
+    match non_static_info {
         Some(s) => Box::leak(s.into_boxed_str()),
         None => "unknown",
-    })
+    }
 }
 
 fn record_as_location(r: &log::Record) -> slog::RecordLocation {
@@ -90,12 +87,13 @@ fn record_as_location(r: &log::Record) -> slog::RecordLocation {
 
     // Warning: expands Record module and file names for non-static strings by leaking strings
     #[cfg(feature = "record_location_unstable")]
-    let module = get_static_info(
-        r.module_path_static(),
-        r.module_path().map(|s| s.to_string()),
-    );
+    let module = r
+        .module_path_static()
+        .unwrap_or_else(|| get_static_info(r.module_path().map(|s| s.to_string())));
     #[cfg(feature = "record_location_unstable")]
-    let file = get_static_info(r.file_static(), r.file().map(|s| s.to_string()));
+    let file = r
+        .file_static()
+        .unwrap_or_else(|| get_static_info(r.file().map(|s| s.to_string())));
 
     let line = r.line().unwrap_or_default();
 
