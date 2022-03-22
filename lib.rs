@@ -250,9 +250,32 @@ impl slog::Drain for StdLog {
         }
 
         let lazy = LazyLogString::new(info, logger_values);
-        // Please don't yell at me for this! :D
-        // https://github.com/rust-lang-nursery/log/issues/95
-        log::__private_api_log(format_args!("{}", lazy), level, &(target, info.module(), info.file(), info.line()));
+        /*
+         * TODO: Support `log` crate key_values here.
+         *
+         * This requires the log/kv_unstable feature here.
+         *
+         * Not supporting this feature is backwards compatible
+         * and it shouldn't break anything (because we've never had),
+         * but is undesirable from a feature-completeness point of view.
+         *
+         * However, this is most likely not as powerful as slog's own
+         * notion of key/value pairs, so I would humbly suggest using `slog`
+         * directly if this feature is important to you ;)
+         *
+         * This avoids using the private log::__private_api_log api function,
+         * which is just a thin wrapper around a `RecordBuilder`.
+         */
+        log::logger().log(
+            &log::Record::builder()
+                .args(format_args!("{}", lazy))
+                .level(level)
+                .target(target)
+                .module_path_static(Some(info.module()))
+                .file_static(Some(info.file()))
+                .line(Some(info.line()))
+                .build(),
+        );
 
         Ok(())
     }
