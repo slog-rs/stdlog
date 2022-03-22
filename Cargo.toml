@@ -21,7 +21,8 @@ kv_unstable = ["log/kv_unstable_std", "slog/dynamic-keys"]
 [dependencies]
 slog = "2.4"
 slog-scope = "4"
-log = { version = "0.4.11", features = ["std"] }
+# 0.4.15 and above change a private API slog-stdlog depends on. See https://github.com/slog-rs/slog/issues/309
+log = { version = "=0.4.14", features = ["std"] }
 
 [dev-dependencies]
 slog-term = "2"
