@@ -10,6 +10,18 @@ homepage = "https://github.com/slog-rs/stdlog"
 repository = "https://github.com/slog-rs/stdlog"
 readme = "README.md"
 edition = "2018"
+# This is our Minimum Supported Rust Version (MSRV)
+#
+# To change this, you must also:
+# 1. Update the README file
+# 2. Update the github actions file
+# 3. Have an appropriate change to the minor version
+#
+# See the Cargo.toml in the primary slog repo for more details
+#
+# The first version of Cargo that supports this field was in Rust 1.56.0.
+# In older releases, the field will be ignored, and Cargo will display a warning.
+rust-version = "1.38"
 
 [lib]
 path = "lib.rs"
