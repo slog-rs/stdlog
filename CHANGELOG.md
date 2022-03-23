@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 4.1.1 - 2022-03-22
+### Added
+
+* Support `feature="log/kv-unstable"` (PR #18)
+  * Requires `slog/dynamic-keys`
+  * This is unstable (obviously), so I don't consider it
+    a change that warants a minor-version bump
+
+### Changed
+
+* Switch to github actions (PR #20)
+
+### Fixed
+
+* Avoid using log's private API to construct records (PR #21)
+  * Fixes recent versions of `log` crate (`>=0.4.15`), resolving slog-rs/slog#309
+* Fix formatting & clippy lints (part of switch to GH actions)
+
 ## 4.1.0 - 2020-10-21
 ### Changed
 
