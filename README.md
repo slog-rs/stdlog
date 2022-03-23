@@ -11,8 +11,8 @@
       <img src="https://img.shields.io/gitter/room/slog-rs/slog.svg" alt="slog-rs Gitter Chat">
   </a>
 
-  <a href="https://blog.rust-lang.org/2019/09/26/Rust-1.38.0.html">
-      <img src="https://img.shields.io/badge/rust-1.38%2B-orange.svg" alt="Minimum Rust Version 1.38">
+  <a href="https://blog.rust-lang.org/2019/11/07/Rust-1.39.0.html">
+      <img src="https://img.shields.io/badge/rust-1.39%2B-orange.svg" alt="Minimum Rust Version 1.38">
   </a>
 </p>
 
