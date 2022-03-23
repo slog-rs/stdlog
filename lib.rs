@@ -215,7 +215,7 @@ impl<'a> fmt::Display for LazyLogString<'a> {
         write!(f, "{}", self.info.msg())?;
 
         let io = io::Cursor::new(Vec::new());
-        let mut ser = KSV::new(io);
+        let mut ser = Ksv::new(io);
 
         self.logger_values
             .serialize(self.info, &mut ser)
@@ -282,13 +282,13 @@ impl slog::Drain for StdLog {
 }
 
 /// Key-Separator-Value serializer
-struct KSV<W: io::Write> {
+struct Ksv<W: io::Write> {
     io: W,
 }
 
-impl<W: io::Write> KSV<W> {
+impl<W: io::Write> Ksv<W> {
     fn new(io: W) -> Self {
-        KSV { io: io }
+        Ksv { io }
     }
 
     fn into_inner(self) -> W {
@@ -296,7 +296,7 @@ impl<W: io::Write> KSV<W> {
     }
 }
 
-impl<W: io::Write> slog::Serializer for KSV<W> {
+impl<W: io::Write> slog::Serializer for Ksv<W> {
     fn emit_arguments(&mut self, key: slog::Key, val: &fmt::Arguments) -> slog::Result {
         write!(self.io, ", {}: {}", key, val)?;
         Ok(())
