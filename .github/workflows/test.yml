@@ -50,8 +50,14 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
           override: true
-      # NOTE: We only run `cargo test`. No need for a seperate `cargo check`
+      - name: Check
+        run: |
+          cargo check --verbose --features "${{ matrix.features }}"
+        # A failing `cargo check` always fails the build
+        continue-on-error: false
+      # NOTE: We only run `cargo test` if version > MSRV. Tests break on old MSRV due to
+      # a dev-dependency.
       - name: Test
         run: |
           cargo test --verbose --features "${{ matrix.features }}"
-  
+        if: "${{ matrix.rust == 'stable' || matrix.rust == 'nightly' }}"
