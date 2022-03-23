@@ -21,7 +21,7 @@ edition = "2018"
 #
 # The first version of Cargo that supports this field was in Rust 1.56.0.
 # In older releases, the field will be ignored, and Cargo will display a warning.
-rust-version = "1.39"
+rust-version = "1.38"
 
 [lib]
 path = "lib.rs"
