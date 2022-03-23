@@ -21,6 +21,10 @@ edition = "2018"
 #
 # The first version of Cargo that supports this field was in Rust 1.56.0.
 # In older releases, the field will be ignored, and Cargo will display a warning.
+#
+# DISCLAIMER:
+# The log/kv_unstable feature requires a recent (stable) compiler.
+# It will not compile with this claimed MSRV and requires a recent (stable) compiler.
 rust-version = "1.38"
 
 [lib]

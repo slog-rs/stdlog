@@ -29,6 +29,9 @@ jobs:
       fail-fast: false # Even if one job fails we still want to see the other ones
       matrix:
         # 1.39 is MSRV. Keep in sync with Cargo.toml
+        # 
+        # There are no MSRV guarentees for the kv_unstable feature.
+        # See `Cargo.toml` for more details.
         rust: [1.39, stable, nightly]
         # NOTE: Features to test must be specified manually. They are applied to all versions seperately.
         #
@@ -37,6 +40,9 @@ jobs:
         #
         # Specific feature combos can be overriden per-version with 'include' and 'exclude'
         features: ["", "kv_unstable"]
+        exclude:
+          - rust: 1.39 # MSRV (see above)
+            features: "kv_unstable"
 
     steps:
       - uses: actions/checkout@v2
