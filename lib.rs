@@ -100,10 +100,10 @@ impl log::Log for Logger {
         };
         #[cfg(feature = "kv_unstable")]
         {
-            let key_values = r.key_values();
-            let mut visitor = kv::Visitor::new();
-            key_values.visit(&mut visitor).unwrap();
-            slog_scope::with_logger(|logger| logger.log(&slog::Record::new(&s, args, b!(visitor))))
+            let key_values = kv::SourceKV(r.key_values());
+            slog_scope::with_logger(|logger| {
+                logger.log(&slog::Record::new(&s, args, b!(key_values)))
+            })
         }
         #[cfg(not(feature = "kv_unstable"))]
         slog_scope::with_logger(|logger| logger.log(&slog::Record::new(&s, args, b!())))
