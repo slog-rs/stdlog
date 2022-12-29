@@ -251,31 +251,25 @@ impl slog::Drain for StdLog {
 
         let lazy = LazyLogString::new(info, logger_values);
         /*
-         * TODO: Support `log` crate key_values here.
-         *
-         * This requires the log/kv_unstable feature here.
-         *
-         * Not supporting this feature is backwards compatible
-         * and it shouldn't break anything (because we've never had),
-         * but is undesirable from a feature-completeness point of view.
-         *
-         * However, this is most likely not as powerful as slog's own
-         * notion of key/value pairs, so I would humbly suggest using `slog`
-         * directly if this feature is important to you ;)
-         *
          * This avoids using the private log::__private_api_log api function,
          * which is just a thin wrapper around a `RecordBuilder`.
          */
-        log::logger().log(
-            &log::Record::builder()
-                .args(format_args!("{}", lazy))
-                .level(level)
-                .target(target)
-                .module_path_static(Some(info.module()))
-                .file_static(Some(info.file()))
-                .line(Some(info.line()))
-                .build(),
-        );
+        let mut record_builder = log::Record::builder();
+        record_builder
+            .level(level)
+            .target(target)
+            .module_path_static(Some(info.module()))
+            .file_static(Some(info.file()))
+            .line(Some(info.line()));
+        #[cfg(feature = "kv_unstable")]
+        let source = kv::get_kv_source(info, logger_values)?;
+        #[cfg(feature = "kv_unstable")]
+        record_builder.key_values(&source);
+
+        // Due to https://github.com/rust-lang/rust/issues/92698, it is necessary to wait until we
+        // actually call `.build()` to use `format_args`. And we split that out so that we can
+        // conditionally call `key_values` based on the kv_unstable feature flag
+        log::logger().log(&record_builder.args(format_args!("{}", lazy)).build());
 
         Ok(())
     }
