@@ -1,9 +1,9 @@
-use std::sync::Mutex;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Mutex;
 
-use slog::Drain;
-use log::RecordBuilder;
 use fragile::Fragile;
+use log::RecordBuilder;
+use slog::Drain;
 
 struct StdLogAssertExpected<'a> {
     expected: Mutex<Vec<Fragile<log::Record<'a>>>>,
@@ -26,8 +26,8 @@ impl log::Log for StdLogAssertExpected<'_> {
                         self.current_index.fetch_add(1, Ordering::Acquire)
                     );
                     e.get().clone()
-                },
-                None => panic!("Expected no more log records. but got {:?}", actual)
+                }
+                None => panic!("Expected no more log records. but got {:?}", actual),
             }
         };
         assert_eq!(expected.metadata(), actual.metadata());
@@ -70,15 +70,22 @@ macro_rules! record {
             .module_path(Some(module_path!()))
             .target(module_path!())
             .build()
-    }
+    };
 }
 
 #[test]
+#[cfg_attr(
+    feature = "kv_unstable",
+    ignore = "TODO: Support kv-unstable feature (See PR #26)"
+)]
 fn test_slog2log() {
     let expected = vec![
         record!(Info, "Hello World!"),
-        record!(Debug, "Hello World, I am 100 years old")
-    ].into_iter().map(Fragile::new).collect::<Vec<Fragile<log::Record>>>();
+        record!(Debug, "Hello World, I am 100 years old"),
+    ]
+    .into_iter()
+    .map(Fragile::new)
+    .collect::<Vec<Fragile<log::Record>>>();
     let std_logger = Box::leak(Box::new(StdLogAssertExpected {
         expected: Mutex::new(expected),
         current_index: 0.into(),
