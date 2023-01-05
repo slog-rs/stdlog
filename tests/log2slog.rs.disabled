@@ -1,0 +1,61 @@
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::fmt;
+use std::collections::HashMap;
+
+struct ExpectedValue {
+    value: String,
+    seen: AtomicBool,
+}
+struct SlogExpectSerialize {
+    expected: HashMap<slog::Key, ExpectedValue>,
+}
+impl slog::Serializer for SlogExpectSerialize {
+    fn emit_arguments(&mut self, key: slog::Key, val: &fmt::Arguments) -> slog::Result {
+        if let Some(expected_value) = self.expected.get(&key) {
+            let was_seen = expected_value.seen.compare_exchange(
+                false, true,
+                Ordering::SeqCst, Ordering::SeqCst
+            ).unwrap_or_else(std::convert::identity);
+            assert!(!was_seen, "Already saw {key:?}");
+            assert_eq!(expected_value.value, fmt::format(*val));
+            Ok(())
+        } else {
+            panic!("Got unexpected key {key:?} = {val}");
+        }
+    }
+}
+impl SlogExpectSerialize {
+    fn check_finished(&self) {
+        for (key, value) in self.expected {
+            if !value.seen.load(Ordering::SeqCst) {
+                panic!("Did not see value for key = {key:?}")
+            }
+        }
+    }
+}
+impl fmt::Debug for SlogExpectSerialize {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_map().entries(self.expected.iter().map(|(ref key, ref value)| {
+            let key: &str = key.as_ref();
+            (key, &*value.value)
+        })).finish()
+    }
+}
+
+struct SlogAssertExpected {
+    _fo: std::convert::Infallible,
+}
+impl slog::Drain for SlogAssertExpected {
+    type Ok = ();
+    type Err = slog::Error;
+    fn log(&self, record: &slog::Record<'_>, values: &slog::OwnedKVList) -> Result<(), slog::Error> {
+        todo!()
+    }
+}
+impl SlogAssertExpected {
+    fn assert_finished(&self) {
+        todo!()
+    }
+}
+
+compile_error!("Not Yet Implemented");

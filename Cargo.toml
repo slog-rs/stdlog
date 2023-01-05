@@ -42,3 +42,6 @@ log = { version = "0.4.11", features = ["std"] }
 [dev-dependencies]
 slog-term = "2"
 slog-async = "2"
+# Used for tests
+fragile = "2"
+
